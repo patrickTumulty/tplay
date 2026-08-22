@@ -1,0 +1,24 @@
+{
+    "name": "tplay-dev",
+    "build": {
+        "dockerfile": "./Dockerfile",
+        "context": ".."
+    },
+    "containerEnv": {
+        "SHELL": "/bin/bash",
+        "DISPLAY": "unix:0"
+    },
+    "forwardPorts": [
+        8081
+    ],
+    "containerUser": "ubuntu",
+    "workspaceFolder": "/workspace",
+    "mounts": [
+        "source=${localEnv:HOME}/.config/nvim,target=/home/developer/.config/nvim,type=bind"
+    ],
+    "runArgs": [
+        "--network=host",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt=seccomp=unconfined"
+    ]
+}
