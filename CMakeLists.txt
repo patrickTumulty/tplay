@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.20)
 
 project(tplay LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
 
