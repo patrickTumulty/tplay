@@ -1,12 +1,19 @@
 FROM ubuntu:24.04
 
+USER root
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         build-essential \
         ca-certificates \
         cmake \
+        ninja-build \
+        pkg-config \
         gdb \
         git \
+        git-lfs \
+        clang \
+        valgrind \
         gstreamer1.0-libav \
         gstreamer1.0-plugins-bad \
         gstreamer1.0-plugins-base \
@@ -16,12 +23,30 @@ RUN apt-get update \
         libgstreamer-plugins-base1.0-dev \
         libgstreamer1.0-dev \
         libncurses-dev \
-        neovim \
-        ninja-build \
+        iputils-ping \
+        iproute2 \
+        dnsutils \
+        tcpdump \
+        tshark \
+        ethtool \
+        lsof \
+        strace \
+        socat \
+        netcat-openbsd \
+        ffmpeg \
+        curl \
+        mtr \
+        net-tools \
+        tree \
+        jq \
+        less \
+        file \
+        unzip \
+        zip \
         openssh-server \
-        pkg-config \
         sudo \
-        valgrind \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && echo "ubuntu ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu \
+    && chmod 0440 /etc/sudoers.d/ubuntu
 
-
+USER ubuntu 

@@ -12,9 +12,8 @@
         8081
     ],
     "containerUser": "ubuntu",
-    "workspaceFolder": "/workspace",
     "mounts": [
-        "source=${localEnv:HOME}/.config/nvim,target=/home/developer/.config/nvim,type=bind"
+        "source=${localEnv:HOME}/.config,target=/home/ubuntu/.config,type=bind,consistency=cached"
     ],
     "runArgs": [
         "--network=host",
