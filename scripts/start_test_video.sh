@@ -66,7 +66,10 @@ gst-launch-1.0 -v \
     videotestsrc is-live=true pattern=ball ! \
     "video/x-raw,width=${WIDTH},height=${HEIGHT},framerate=30/1" ! \
     videoconvert ! \
-    x265enc tune=zerolatency bitrate=5000 speed-preset=ultrafast ! \
+    x265enc tune=zerolatency \
+            bitrate=5000 \
+            speed-preset=ultrafast \
+            option-string="repeat-headers=1" ! \
     h265parse ! \
     mpegtsmux ! \
     udpsink host=127.0.0.1 port="${PORT}"

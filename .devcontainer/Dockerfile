@@ -20,6 +20,7 @@ RUN apt-get update \
         gstreamer1.0-plugins-good \
         gstreamer1.0-plugins-ugly \
         gstreamer1.0-tools \
+        gstreamer1.0-plugins-base-apps \
         libgstreamer-plugins-base1.0-dev \
         libgstreamer1.0-dev \
         libncurses-dev \
