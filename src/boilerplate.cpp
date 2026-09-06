@@ -1,40 +1,14 @@
-#include <cstdint>
-#include <cstdio>
+
 #include <gst/gst.h>
 #include <iostream>
-#include <unistd.h>
-
-struct Ip
-{
-    union {
-        uint32_t address;
-        struct
-        {
-            uint8_t octet3;
-            uint8_t octet2;
-            uint8_t octet1;
-            uint8_t octet0;
-        };
-    };
-};
 
 int main(int argc, char *argv[])
 {
-    Ip ip{};
-    int port = 0;
-
-    for (int i = 1; i < argc; i++)
-    {
-        if (sscanf(argv[i], "udp://%hhu.%hhu.%hhu.%hhu:%d", &ip.octet0, &ip.octet1, &ip.octet2, &ip.octet3, &port))
-            printf("IP %d.%d.%d.%d at port %d\n", ip.octet0, ip.octet1, ip.octet2, ip.octet3, port);
-        if (sscanf(argv[i], "udp://localhost:%d", &port))
-            printf("localhost at port %d\n", port);
-    }
-
-    gst_init(nullptr, nullptr);
+    // Initialize GStreamer
+    gst_init(&argc, &argv);
 
     // Create the elements
-    GstElement *pipeline = gst_pipeline_new("tplay-pipeline");
+    GstElement *pipeline = gst_pipeline_new("my-pipeline");
     GstElement *source = gst_element_factory_make("videotestsrc", "source");
     GstElement *sink = gst_element_factory_make("autovideosink", "sink");
 
@@ -59,7 +33,7 @@ int main(int argc, char *argv[])
 
     // Wait for 3 seconds to let it run
     std::cout << "Pipeline running..." << std::endl;
-    sleep(3);
+    g_usleep(3 * G_USEC_PER_SEC);
 
     // Tear down and clean up
     std::cout << "Stopping pipeline..." << std::endl;
