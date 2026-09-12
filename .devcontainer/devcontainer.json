@@ -16,8 +16,12 @@
         "source=${localEnv:HOME}/.config,target=/home/ubuntu/.config,type=bind,consistency=cached"
     ],
     "runArgs": [
+        "--gpus=all",
         "--network=host",
         "--cap-add=SYS_PTRACE",
         "--security-opt=seccomp=unconfined"
-    ]
+    ],
+    "containerEnv": {
+        "NVIDIA_DRIVER_CAPABILITIES": "compute,video,utility"
+    }
 }

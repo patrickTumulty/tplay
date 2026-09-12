@@ -24,6 +24,9 @@ RUN apt-get update \
         libgstreamer-plugins-base1.0-dev \
         libgstreamer1.0-dev \
         libncurses-dev \
+        libva-dev \
+        libvdpau-dev \
+        nvidia-cuda-toolkit-gcc \
         iputils-ping \
         iproute2 \
         dnsutils \
