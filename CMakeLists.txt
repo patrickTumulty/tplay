@@ -4,6 +4,8 @@ project(tplay LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(SPDLOG_COMPILE_LEVEL SPDLOG_LEVEL_DEBUG)
+
 add_compile_options(
     -Wno-unused-variable
     -Wno-unused-parameter
@@ -16,7 +18,10 @@ pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
     gstreamer-video-1.0
 )
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+set(SPDLOG_FMT_EXTERNAL OFF)
+add_subdirectory(extern/spdlog)
+
+add_executable(${PROJECT_NAME} src/main.cpp src/logging.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${GSTREAMER_INCLUDE_DIRS}
@@ -28,6 +33,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GSTREAMER_LIBRARIES}
+    spdlog::spdlog
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)

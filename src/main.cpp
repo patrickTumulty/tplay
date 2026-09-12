@@ -1,4 +1,3 @@
-#include "gst/video/video-format.h"
 #include <cstdint>
 #include <cstdio>
 #include <gst/app/gstappsink.h>
@@ -12,8 +11,10 @@
 #include <gst/gstsample.h>
 #include <gst/video/gstvideometa.h>
 #include <gst/video/video.h>
-#include <iostream>
+#include <spdlog/spdlog.h>
 #include <unistd.h>
+
+#include "logging.h"
 
 struct Ip
 {
@@ -56,6 +57,43 @@ enum VideoSource : uint8_t
     UDP_MPEGTS = 1
 };
 
+static void gstLogToSpdlog(GstDebugCategory *category, GstDebugLevel level, const gchar *file, const gchar *_function,
+                           gint line, GObject *object, GstDebugMessage *message, gpointer userData)
+{
+    (void)userData;
+    auto logger = spdlog::get("gst");
+
+    const gchar *text = gst_debug_message_get(message);
+    const gchar *name = category ? gst_debug_category_get_name(category) : "unknown";
+
+    spdlog::source_loc loc{file == nullptr ? "" : file, static_cast<int>(line), _function == nullptr ? "" : _function};
+
+    switch (level)
+    {
+    case GST_LEVEL_ERROR:
+        logger->log(loc, spdlog::level::err, "[{}] {}", name, text);
+        break;
+    case GST_LEVEL_WARNING:
+    case GST_LEVEL_FIXME:
+        logger->log(loc, spdlog::level::warn, "[{}] {}", name, text);
+        break;
+    case GST_LEVEL_INFO:
+        logger->log(loc, spdlog::level::info, "[{}] {}", name, text);
+        break;
+    case GST_LEVEL_DEBUG:
+        logger->log(loc, spdlog::level::debug, "[{}] {}", name, text);
+        break;
+    case GST_LEVEL_LOG:
+    case GST_LEVEL_TRACE:
+    case GST_LEVEL_MEMDUMP:
+    default:
+        logger->log(loc, spdlog::level::trace, "[{}] {}", name, text);
+        break;
+    }
+
+    (void)object;
+}
+
 static void onPadAdded(GstElement *_, GstPad *newPad, gpointer userData)
 {
     PipelineContext *context = (PipelineContext *)userData;
@@ -63,7 +101,7 @@ static void onPadAdded(GstElement *_, GstPad *newPad, gpointer userData)
     GstPad *sinkPad = gst_element_get_static_pad(context->h265parse, "sink");
     if (gst_pad_is_linked(sinkPad))
     {
-        printf("Unable to link new pad\n");
+        spdlog::warn("Unable to link new pad");
         gst_object_unref(sinkPad);
         return;
     }
@@ -80,14 +118,14 @@ static void onPadAdded(GstElement *_, GstPad *newPad, gpointer userData)
         const GstStructure *structure = gst_caps_get_structure(caps, 0);
         const gchar *name = gst_structure_get_name(structure);
 
-        printf("New pad: %s\n", name);
+        spdlog::info("New pad: {}", name);
 
         if (g_str_has_prefix(name, "video/x-h265"))
         {
             GstPadLinkReturn ret = gst_pad_link(newPad, sinkPad);
             if (GST_PAD_LINK_FAILED(ret))
             {
-                g_printerr("Failed to link demux -> parser: %s\n", gst_pad_link_get_name(ret));
+                spdlog::error("Failed to link demux -> parser: {}", gst_pad_link_get_name(ret));
             }
         }
         gst_caps_unref(caps);
@@ -99,7 +137,7 @@ static void onPadAdded(GstElement *_, GstPad *newPad, gpointer userData)
 #define RETURN_IF_NULL(VAR)                                                                                            \
     if (!(VAR))                                                                                                        \
     {                                                                                                                  \
-        printf("Unable to initialize %s\n", #VAR);                                                                     \
+        spdlog::error("Unable to initialize {}", #VAR);                                                                \
         return nullptr;                                                                                                \
     }
 
@@ -118,7 +156,7 @@ GstElement *createUdpSource(PipelineContext *context, Ip ip, int port)
     RETURN_IF_NULL(decoder);
     GstElement *converter = gst_element_factory_make("videoconvert", "converter");
     RETURN_IF_NULL(converter);
-    GstElement *capsfilter = gst_element_factory_make("capsfilter", "filter");
+    GstElement *capsfilter = gst_element_factory_make("capsfilter", "udp-source-filter");
     RETURN_IF_NULL(capsfilter);
 
     context->h265parse = parser;
@@ -144,7 +182,7 @@ GstElement *createUdpSource(PipelineContext *context, Ip ip, int port)
 
     if (!gst_element_link(source, demux))
     {
-        printf("Failed to link source -> demux\n");
+        spdlog::error("Failed to link source -> demux");
         return nullptr;
     }
 
@@ -155,7 +193,7 @@ GstElement *createUdpSource(PipelineContext *context, Ip ip, int port)
                                NULL))
     {
 
-        printf("Failed to link parser -> decoder -> converter -> sink\n");
+        spdlog::error("Failed to link parser -> decoder -> converter -> sink");
         return nullptr;
     }
 
@@ -217,7 +255,7 @@ static GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
 
         const gchar *format = gst_structure_get_string(s, "format");
 
-        printf("Resolution %dx%d stride %d '%s'\n", context->pixelWidth, context->pixelHeight, stride, format);
+        spdlog::info("Resolution {}x{} stride {} '{}'", context->pixelWidth, context->pixelHeight, stride, format);
     }
 
     /*
@@ -227,7 +265,7 @@ static GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
     // const uint8_t *pixels = map.data;
     size_t size = map.size;
 
-    g_print("Got frame: %zu bytes\n", size);
+    spdlog::debug("Got frame: {} bytes", size);
 
     gst_buffer_unmap(buffer, &map);
 
@@ -238,6 +276,8 @@ static GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
 
 int main(int argc, char *argv[])
 {
+    logging::init();
+
     Ip ip;
     int port = 0;
     VideoSource videoSource = NONE;
@@ -259,7 +299,7 @@ int main(int argc, char *argv[])
     switch (videoSource)
     {
     case UDP_MPEGTS:
-        printf("udp://%d.%d.%d.%d:%d\n", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
+        spdlog::info("udp://{}.{}.{}.{}:{}", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
         break;
     case NONE:
     default:
@@ -267,6 +307,13 @@ int main(int argc, char *argv[])
     }
 
     gst_init(nullptr, nullptr);
+
+    gst_debug_set_default_threshold(GST_LEVEL_INFO);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    gst_debug_remove_log_function(gst_debug_log_default);
+    gst_debug_add_log_function(gstLogToSpdlog, nullptr, nullptr);
+#pragma GCC diagnostic pop
 
     // Create the elements
     GstElement *pipeline = gst_pipeline_new("tplay-pipeline");
@@ -276,7 +323,7 @@ int main(int argc, char *argv[])
 
     if (!appsink)
     {
-        g_printerr("Failed to create appsink\n");
+        spdlog::error("Failed to create appsink");
         return 1;
     }
 
@@ -287,16 +334,17 @@ int main(int argc, char *argv[])
     // Check if elements were created successfully
     if (!pipeline || !source)
     {
-        printf("%p %p %p\n", (void *)pipeline, (void *)source, (void *)appsink);
+        spdlog::error("Failed to create elements: pipeline={} source={} appsink={}", (void *)pipeline, (void *)source,
+                      (void *)appsink);
         return -1;
     }
 
     // Build the pipeline by adding elements and linking them
-    printf("1\n");
-    gst_bin_add_many(GST_BIN(context.pipeline), source, appsink, NULL);
+    spdlog::debug("Adding source and appsink to pipeline");
+    gst_bin_add_many(GST_BIN(context.pipeline), appsink, NULL);
     if (gst_element_link(source, appsink) != TRUE)
     {
-        std::cerr << "Elements could not be linked." << std::endl;
+        spdlog::error("Elements could not be linked.");
         gst_object_unref(pipeline);
         return -1;
     }
@@ -305,11 +353,11 @@ int main(int argc, char *argv[])
     gst_element_set_state(pipeline, GST_STATE_PLAYING);
 
     // Wait for 3 seconds to let it run
-    std::cout << "Pipeline running..." << std::endl;
+    spdlog::info("Pipeline running...");
     sleep(10);
 
     // Tear down and clean up
-    std::cout << "Stopping pipeline..." << std::endl;
+    spdlog::info("Stopping pipeline...");
     gst_element_set_state(pipeline, GST_STATE_NULL);
 
     // Unreference the pipeline to free all internal elements and memory
