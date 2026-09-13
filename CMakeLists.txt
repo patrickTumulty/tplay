@@ -41,3 +41,13 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 endif()
+
+# Point clangd at this build's compile_commands.json from the repository
+# root. The last configured preset wins; re-run `cmake --preset <name>`
+# to update.
+if(CMAKE_EXPORT_COMPILE_COMMANDS)
+    file(REMOVE "${CMAKE_SOURCE_DIR}/compile_commands.json")
+    file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
+                     "${CMAKE_SOURCE_DIR}/compile_commands.json"
+                     SYMBOLIC)
+endif()
