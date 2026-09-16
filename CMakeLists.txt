@@ -12,6 +12,9 @@ add_compile_options(
 )
 
 find_package(PkgConfig REQUIRED)
+
+find_package(Curses REQUIRED)
+
 pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
     gstreamer-1.0
     gstreamer-app-1.0
@@ -21,10 +24,15 @@ pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
 set(SPDLOG_FMT_EXTERNAL OFF)
 add_subdirectory(extern/spdlog)
 
-add_executable(${PROJECT_NAME} src/main.cpp src/logging.cpp)
+add_executable(${PROJECT_NAME} 
+    src/main.cpp 
+    src/logging.cpp
+    src/utils.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${GSTREAMER_INCLUDE_DIRS}
+    ${CURSES_INCLUDE_DIRS}
 )
 
 target_link_directories(${PROJECT_NAME} PRIVATE
@@ -33,6 +41,7 @@ target_link_directories(${PROJECT_NAME} PRIVATE
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GSTREAMER_LIBRARIES}
+    ${CURSES_LIBRARIES}
     spdlog::spdlog
 )
 

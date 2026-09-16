@@ -1,6 +1,8 @@
-#include "logging.h"
+#include "logging.hpp"
 #include "spdlog/common.h"
+#include "spdlog/sinks/sink.h"
 
+#include <cmath>
 #include <memory>
 #include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
@@ -22,7 +24,9 @@ void init()
     auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     auto fileSink = std::make_shared<spdlog::sinks::rotating_file_sink_mt>(kLogFile, kMaxFileSize, kMaxFiles);
 
-    std::vector<spdlog::sink_ptr> sinks{consoleSink, fileSink};
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(fileSink);
+    // sinks.push_back(consoleSink);
 
     auto tplayLogger = std::make_shared<spdlog::logger>("tplay", sinks.begin(), sinks.end());
     tplayLogger->set_pattern(kPattern);

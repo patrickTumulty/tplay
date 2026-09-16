@@ -11,10 +11,13 @@
 #include <gst/gstsample.h>
 #include <gst/video/gstvideometa.h>
 #include <gst/video/video.h>
+#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 #include <spdlog/spdlog.h>
 #include <unistd.h>
 
-#include "logging.h"
+#include "logging.hpp"
+#include "utils.hpp"
 
 struct Ip
 {
@@ -42,19 +45,29 @@ struct Ip
     }
 };
 
+enum VideoSource : uint8_t
+{
+    NONE = 0,
+    UDP_MPEGTS = 1
+};
+
+struct NetworkSource
+{
+    Ip ip{};
+    int port;
+};
+
 struct PipelineContext
 {
     bool resolutionSet = false;
     int pixelWidth;
     int pixelHeight;
+    VideoSource videoSource = NONE;
+    union {
+        NetworkSource network{};
+    };
     GstElement *pipeline;
     GstElement *h265parse;
-};
-
-enum VideoSource : uint8_t
-{
-    NONE = 0,
-    UDP_MPEGTS = 1
 };
 
 static void gstLogToSpdlog(GstDebugCategory *category, GstDebugLevel level, const gchar *file, const gchar *_function,
@@ -274,38 +287,8 @@ static GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
     return GST_FLOW_OK;
 }
 
-int main(int argc, char *argv[])
+void runPipeline(PipelineContext *context)
 {
-    logging::init();
-
-    Ip ip;
-    int port = 0;
-    VideoSource videoSource = NONE;
-    PipelineContext context;
-
-    for (int i = 1; i < argc; i++)
-    {
-        if (sscanf(argv[i], "udp://%hhu.%hhu.%hhu.%hhu:%d", &ip.octet0, &ip.octet1, &ip.octet2, &ip.octet3, &port))
-        {
-            videoSource = UDP_MPEGTS;
-        }
-        else if (sscanf(argv[i], "udp://localhost:%d", &port))
-        {
-            ip = Ip::localhost();
-            videoSource = UDP_MPEGTS;
-        }
-    }
-
-    switch (videoSource)
-    {
-    case UDP_MPEGTS:
-        spdlog::info("udp://{}.{}.{}.{}:{}", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
-        break;
-    case NONE:
-    default:
-        return 0;
-    }
-
     gst_init(nullptr, nullptr);
 
     gst_debug_set_default_threshold(GST_LEVEL_INFO);
@@ -317,14 +300,14 @@ int main(int argc, char *argv[])
 
     // Create the elements
     GstElement *pipeline = gst_pipeline_new("tplay-pipeline");
-    context.pipeline = pipeline;
-    GstElement *source = createUdpSource(&context, ip, port);
+    context->pipeline = pipeline;
+    GstElement *source = createUdpSource(context, context->network.ip, context->network.port);
     GstElement *appsink = gst_element_factory_make("appsink", "appsink");
 
     if (!appsink)
     {
         spdlog::error("Failed to create appsink");
-        return 1;
+        return;
     }
 
     g_object_set(appsink, "emit-signals", TRUE, "sync", FALSE, NULL);
@@ -336,17 +319,17 @@ int main(int argc, char *argv[])
     {
         spdlog::error("Failed to create elements: pipeline={} source={} appsink={}", (void *)pipeline, (void *)source,
                       (void *)appsink);
-        return -1;
+        return;
     }
 
     // Build the pipeline by adding elements and linking them
     spdlog::debug("Adding source and appsink to pipeline");
-    gst_bin_add_many(GST_BIN(context.pipeline), appsink, NULL);
+    gst_bin_add_many(GST_BIN(context->pipeline), appsink, NULL);
     if (gst_element_link(source, appsink) != TRUE)
     {
         spdlog::error("Elements could not be linked.");
         gst_object_unref(pipeline);
-        return -1;
+        return;
     }
 
     // Set the pipeline to the PLAYING state
@@ -362,6 +345,134 @@ int main(int argc, char *argv[])
 
     // Unreference the pipeline to free all internal elements and memory
     gst_object_unref(pipeline);
+}
+
+struct cli_context
+{
+    int rows;
+    int cols;
+};
+
+void drawbox(int x, int y, int height, int width)
+{
+    int max_y = height, max_x = width;
+
+    mvhline(y, x + 1, ACS_HLINE, max_x - 2);             // Top Line
+    mvhline(y + max_y - 1, x + 1, ACS_HLINE, max_x - 2); // Bottom Line
+
+    mvvline(y + 1, x, ACS_VLINE, max_y - 2);             // Left Line
+    mvvline(y + 1, x + max_x - 1, ACS_VLINE, max_y - 2); // Right Line
+
+    mvaddch(y, x, ACS_ULCORNER);                         // Upper Left
+    mvaddch(y, x + max_x - 1, ACS_URCORNER);             // Upper Right
+    mvaddch(y + max_y - 1, x, ACS_LLCORNER);             // Lower Left
+    mvaddch(y + max_y - 1, x + max_x - 1, ACS_LRCORNER); // Lower Right
+}
+
+void run_update_loop()
+{
+    initscr();
+    noecho();
+    cbreak();
+    // keypad(stdscr, TRUE);
+    // nodelay(stdscr, TRUE);
+    curs_set(0);
+
+    clear();
+    refresh();
+
+    cli_context ctx{};
+
+    while (true)
+    {
+        clear();
+
+        getmaxyx(stdscr, ctx.rows, ctx.cols);
+
+        Rectangle videoFrame = {
+            .height = ctx.rows - 2 - 3,
+            .width = ctx.cols - 2,
+        };
+
+        auto rec = fitDimensionsToRatio(videoFrame, 32 / 9);
+
+        // auto rec = videoFrame;
+        // rec.width = 32;
+        // rec.height = 9;
+        spdlog::info("{}x{} -> {}x{}", videoFrame.width, videoFrame.height, rec.width, rec.height);
+        spdlog::flush_all();
+
+        int offsetX = std::max(1, (videoFrame.width - rec.width) / 2);
+        int offsetY = std::max(1, (videoFrame.height - rec.height) / 2);
+
+        drawbox(offsetX, offsetY, rec.height, rec.width);
+
+        drawbox(0, 0, ctx.rows - 3, ctx.cols);
+        drawbox(0, ctx.rows - 3, 3, ctx.cols);
+
+        mvaddstr(ctx.rows - 2, 1, "Hello, World!!!");
+
+        refresh();
+
+        int ch = getch();
+        if (ch == KEY_RESIZE)
+        {
+            // findRatio(ctx.rows, ctx.cols);
+            // spdlog::info("Resize event!!! {}x{}", ctx.cols, ctx.rows);
+        }
+        else if (ch == 27) // ESC
+        {
+            break;
+        }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    }
+
+    endwin();
+}
+
+int main(int argc, char *argv[])
+{
+    logging::init();
+
+    Ip ip;
+    int port = 0;
+    VideoSource videoSource = NONE;
+    PipelineContext context;
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (sscanf(argv[i], "udp://%hhu.%hhu.%hhu.%hhu:%d", &ip.octet0, &ip.octet1, &ip.octet2, &ip.octet3, &port))
+        {
+            videoSource = UDP_MPEGTS;
+            context.network.ip = ip;
+            context.network.port = port;
+        }
+        else if (sscanf(argv[i], "udp://localhost:%d", &port))
+        {
+            ip = Ip::localhost();
+            videoSource = UDP_MPEGTS;
+            context.network.ip = ip;
+            context.network.port = port;
+        }
+    }
+
+    spdlog::info("**** tplay: STARTING");
+
+    // switch (videoSource)
+    // {
+    // case UDP_MPEGTS:
+    //     spdlog::info("udp://{}.{}.{}.{}:{}", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
+    //     break;
+    // case NONE:
+    // default:
+    //
+    //     return 0;
+    // }
+
+    run_update_loop();
+
+    spdlog::info("**** tplay: EXITING");
 
     return 0;
 }

@@ -21,8 +21,9 @@
 ARCH ?= native
 INSTALL_PREFIX ?= $(CURDIR)/dist/tplay-$(ARCH)
 
-BUILD_DIR = build/$(ARCH)
+BUILD_DIR = build/
 BUILD_FILE = $(BUILD_DIR)/build.ninja
+BUILD_TYPE = Release
 
 .PHONY: help all configure build bundle install clean
 
@@ -40,6 +41,7 @@ help:
 	@echo
 	@echo "Variables:"
 	@echo "  ARCH           native | arm64   (default: native)"
+	@echo "  BUILD_TYPE     debug | release (default: release)"
 	@echo "  INSTALL_PREFIX bundle output dir (default: dist/tplay-$(ARCH))"
 	@echo
 	@echo "Example:"
@@ -48,7 +50,7 @@ help:
 all: build
 
 configure:
-	cmake --preset $(ARCH)
+	cmake --preset $(ARCH) -DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
 
 $(BUILD_FILE): configure
 	@true
@@ -62,4 +64,4 @@ install: build
 	scripts/bundle.sh $(ARCH) $(INSTALL_PREFIX)
 
 clean:
-	rm -rf $(BUILD_DIR) dist/tplay-$(ARCH)
+	rm -rf $(BUILD_DIR) dist/
