@@ -12,17 +12,19 @@
 # Base system libraries (the dynamic loader, libc, libm, libstdc++, libgcc)
 # are intentionally left to the target OS.
 #
-# Usage: bundle.sh ARCH [INSTALL_PREFIX]
+# Usage: bundle.sh ARCH [INSTALL_PREFIX] [BUILD_DIR]
 #   ARCH           native | arm64         (default: native)
-#   INSTALL_PREFIX destination directory  (default: dist/tplay-$ARCH)
+#   INSTALL_PREFIX destination directory  (default: dist/)
+#   BUILD_DIR      directory holding the tplay binary (default: build/)
 #
 # Examples:
 #   scripts/bundle.sh native
-#   scripts/bundle.sh arm64 /opt/tplay-arm64
+#   scripts/bundle.sh arm64 dist/tplay-arm64 build/arm64
 set -euo pipefail
 
 ARCH=${1:-native}
-PREFIX=${2:-dist/tplay-${ARCH}}
+PREFIX=${2:-dist}
+BUILD_DIR=${3:-build}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -33,7 +35,11 @@ case "${ARCH}" in
     *) echo "error: unknown ARCH '${ARCH}' (expected 'native' or 'arm64')" >&2; exit 1 ;;
 esac
 
-BIN="${ROOT}/build/${ARCH}/tplay"
+case "${BUILD_DIR}" in
+    /*) BUILD="${BUILD_DIR}" ;;
+    *)  BUILD="${ROOT}/${BUILD_DIR}" ;;
+esac
+BIN="${BUILD}/tplay"
 if [ ! -f "${BIN}" ]; then
     echo "error: ${BIN} not found; run 'make build ARCH=${ARCH}' first" >&2
     exit 1
