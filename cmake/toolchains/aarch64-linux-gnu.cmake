@@ -7,6 +7,11 @@
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_SYSTEM_PROCESSOR aarch64)
 
+# Multiarch lib dir for the target. CMake does not infer CMAKE_LIBRARY_ARCHITECTURE
+# for this cross setup, so find_library would miss /usr/lib/aarch64-linux-gnu and
+# fail to find plain libraries (e.g. Curses via find_package).
+set(CMAKE_LIBRARY_ARCHITECTURE aarch64-linux-gnu)
+
 set(CMAKE_C_COMPILER   /usr/bin/aarch64-linux-gnu-gcc)
 set(CMAKE_CXX_COMPILER /usr/bin/aarch64-linux-gnu-g++)
 

@@ -65,6 +65,7 @@ RUN dpkg --add-architecture arm64 \
         libglib2.0-dev \
         libglib2.0-dev:arm64 \
         libncurses-dev \
+        libncurses-dev:arm64 \
         libva-dev \
         libvdpau-dev \
         nvidia-cuda-toolkit-gcc \
