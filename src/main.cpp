@@ -16,7 +16,9 @@
 #include <spdlog/spdlog.h>
 #include <unistd.h>
 
+#include "greedy_matrix.hpp"
 #include "logging.hpp"
+#include "tui_session.hpp"
 #include "utils.hpp"
 
 struct Ip
@@ -347,89 +349,68 @@ void runPipeline(PipelineContext *context)
     gst_object_unref(pipeline);
 }
 
-struct cli_context
+struct CliContext
 {
     int rows;
     int cols;
 };
 
-void drawbox(int x, int y, int height, int width)
-{
-    int max_y = height, max_x = width;
+// void updatePresentationWindow(CliContext &ctx)
+// {
+//     Rectangle videoFrame = {
+//         .height = ctx.rows - 1,
+//         .width = ctx.cols - 1,
+//     };
+//
+//     auto rec = fitDimensionsToRatio(videoFrame, 32.0f / 9.0f);
+//     int offsetX = std::max(1, (videoFrame.width - rec.width) / 2);
+//     int offsetY = std::max(0, (videoFrame.height - rec.height) / 2);
+//
+//     drawBox(offsetX, offsetY, rec.height, rec.width);
+// }
 
-    mvhline(y, x + 1, ACS_HLINE, max_x - 2);             // Top Line
-    mvhline(y + max_y - 1, x + 1, ACS_HLINE, max_x - 2); // Bottom Line
-
-    mvvline(y + 1, x, ACS_VLINE, max_y - 2);             // Left Line
-    mvvline(y + 1, x + max_x - 1, ACS_VLINE, max_y - 2); // Right Line
-
-    mvaddch(y, x, ACS_ULCORNER);                         // Upper Left
-    mvaddch(y, x + max_x - 1, ACS_URCORNER);             // Upper Right
-    mvaddch(y + max_y - 1, x, ACS_LLCORNER);             // Lower Left
-    mvaddch(y + max_y - 1, x + max_x - 1, ACS_LRCORNER); // Lower Right
-}
-
-void run_update_loop()
-{
-    initscr();
-    noecho();
-    cbreak();
-    // keypad(stdscr, TRUE);
-    // nodelay(stdscr, TRUE);
-    curs_set(0);
-
-    clear();
-    refresh();
-
-    cli_context ctx{};
-
-    while (true)
-    {
-        clear();
-
-        getmaxyx(stdscr, ctx.rows, ctx.cols);
-
-        Rectangle videoFrame = {
-            .height = ctx.rows - 2 - 3,
-            .width = ctx.cols - 2,
-        };
-
-        auto rec = fitDimensionsToRatio(videoFrame, 32 / 9);
-
-        // auto rec = videoFrame;
-        // rec.width = 32;
-        // rec.height = 9;
-        spdlog::info("{}x{} -> {}x{}", videoFrame.width, videoFrame.height, rec.width, rec.height);
-        spdlog::flush_all();
-
-        int offsetX = std::max(1, (videoFrame.width - rec.width) / 2);
-        int offsetY = std::max(1, (videoFrame.height - rec.height) / 2);
-
-        drawbox(offsetX, offsetY, rec.height, rec.width);
-
-        drawbox(0, 0, ctx.rows - 3, ctx.cols);
-        drawbox(0, ctx.rows - 3, 3, ctx.cols);
-
-        mvaddstr(ctx.rows - 2, 1, "Hello, World!!!");
-
-        refresh();
-
-        int ch = getch();
-        if (ch == KEY_RESIZE)
-        {
-            // findRatio(ctx.rows, ctx.cols);
-            // spdlog::info("Resize event!!! {}x{}", ctx.cols, ctx.rows);
-        }
-        else if (ch == 27) // ESC
-        {
-            break;
-        }
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
-    }
-
-    endwin();
-}
+// void onTerminalSizeChange(Rectangle newSize)
+// {
+// }
+//
+// void runUIThread()
+// {
+//     initscr();
+//     noecho();
+//     cbreak();
+//     keypad(stdscr, TRUE);
+//     nodelay(stdscr, TRUE);
+//     curs_set(0);
+//
+//     CliContext ctx{};
+//
+//     getmaxyx(stdscr, ctx.rows, ctx.cols);
+//
+//     while (true)
+//     {
+//         clear();
+//
+//         updatePresentationWindow(ctx);
+//
+//         refresh();
+//
+//         int ch = getch();
+//         if (ch == KEY_RESIZE)
+//         {
+//             Rectangle rec{};
+//             getmaxyx(stdscr, rec.height, rec.width);
+//             onTerminalSizeChange(rec);
+//         }
+//         else if (ch == 27) // ESC
+//         {
+//             break;
+//         }
+//
+//         std::this_thread::sleep_for(std::chrono::milliseconds(33));
+//     }
+//
+//     endwin();
+// }
 
 int main(int argc, char *argv[])
 {
@@ -470,7 +451,9 @@ int main(int argc, char *argv[])
     //     return 0;
     // }
 
-    run_update_loop();
+
+    auto session = TUISession();
+    session.run();
 
     spdlog::info("**** tplay: EXITING");
 

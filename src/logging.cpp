@@ -31,11 +31,13 @@ void init()
     auto tplayLogger = std::make_shared<spdlog::logger>("tplay", sinks.begin(), sinks.end());
     tplayLogger->set_pattern(kPattern);
     tplayLogger->set_level(spdlog::level::debug);
+    tplayLogger->flush_on(spdlog::level::info);
     spdlog::set_default_logger(tplayLogger);
 
     auto gstLogger = std::make_shared<spdlog::logger>("gst", sinks.begin(), sinks.end());
     gstLogger->set_pattern(kPattern);
     gstLogger->set_level(spdlog::level::warn);
+    gstLogger->flush_on(spdlog::level::warn);
     spdlog::register_logger(gstLogger);
 
     spdlog::info("Logging initialized");

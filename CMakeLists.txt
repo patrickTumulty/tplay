@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 project(tplay LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_CXX_STANDARD 20)
 
 set(SPDLOG_COMPILE_LEVEL SPDLOG_LEVEL_DEBUG)
 
@@ -24,10 +25,11 @@ pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
 set(SPDLOG_FMT_EXTERNAL OFF)
 add_subdirectory(extern/spdlog)
 
-add_executable(${PROJECT_NAME} 
-    src/main.cpp 
+add_executable(${PROJECT_NAME}
+    src/main.cpp
     src/logging.cpp
     src/utils.cpp
+    src/tui_session.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

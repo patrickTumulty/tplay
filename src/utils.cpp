@@ -2,6 +2,7 @@
 #include "utils.hpp"
 #include <cmath>
 
+
 Rectangle fitDimensionsToRatio(const Rectangle rec, const float targetRatio)
 {
     Rectangle rec1 = rec;
@@ -44,4 +45,20 @@ Rectangle fitDimensionsToRatio(const Rectangle rec, const float targetRatio)
     }
 
     return rec;
+}
+
+void drawBox(int x, int y, int height, int width)
+{
+    int max_y = height, max_x = width;
+
+    mvhline(y, x + 1, ACS_HLINE, max_x - 2);             // Top Line
+    mvhline(y + max_y - 1, x + 1, ACS_HLINE, max_x - 2); // Bottom Line
+
+    mvvline(y + 1, x, ACS_VLINE, max_y - 2);             // Left Line
+    mvvline(y + 1, x + max_x - 1, ACS_VLINE, max_y - 2); // Right Line
+
+    mvaddch(y, x, ACS_ULCORNER);                         // Upper Left
+    mvaddch(y, x + max_x - 1, ACS_URCORNER);             // Upper Right
+    mvaddch(y + max_y - 1, x, ACS_LLCORNER);             // Lower Left
+    mvaddch(y + max_y - 1, x + max_x - 1, ACS_LRCORNER); // Lower Right
 }
