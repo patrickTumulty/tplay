@@ -29,8 +29,8 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/workspace" -w /workspace --user 0 tplay-dev \
             bash -lc '
-              make build ARCH=native BUILD_DIR=build/native && \
-              make build ARCH=arm64 BUILD_DIR=build/arm64 && \
+              make build ARCH=native BUILD_TYPE=Release BUILD_DIR=build/native && \
+              make build ARCH=arm64 BUILD_TYPE=Release BUILD_DIR=build/arm64 && \
               make install ARCH=native BUILD_DIR=build/native INSTALL_PREFIX=dist/tplay-native && \
               make install ARCH=arm64 BUILD_DIR=build/arm64 INSTALL_PREFIX=dist/tplay-arm64
             '

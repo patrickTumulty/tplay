@@ -1,0 +1,55 @@
+
+#pragma once
+
+#include "imatrix.hpp"
+#include "tui_session.hpp"
+#include "utils.hpp"
+#include <cstdint>
+
+struct pixel
+{
+#pragma pack(push, 1)
+    uint8_t r;
+    uint8_t g;
+    uint8_t b;
+#pragma pack(pop)
+
+    /**
+     * @brief Converts an RGB color to its perceptually accurate luminance (grayscale) value.
+     *
+     * This function calculates brightness using the ITU-R BT.709 standard coefficients,
+     * which are optimized for modern sRGB digital displays and HDTVs. It weights the
+     * channels based on human visual sensitivity, prioritizing green over red and blue.
+     *
+     * Formula: 0.2126 * r + 0.7152 * g + 0.0722 * b
+     *
+     * @return The calculated luminance value as a float, ranging from 0.0f (darkest) to 1.0f (brightest).
+     */
+    float luminance()
+    {
+        return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+    }
+};
+
+class Video2AsciiConverter : public ITUISessionListener
+{
+  public:
+    Video2AsciiConverter();
+
+    void processPixelBuffer(const imatrix<pixel> &buffer);
+
+    void onTerminalUpdate() override;
+    void onTerminalSizeChange(Rectangle newSize) override;
+
+  private:
+    float averagePixelsLuminance(int x, int y, int height, int width, const imatrix<pixel> &buffer);
+
+    Rectangle _terminalSize;
+    bool _terminalSizeChange;
+    std::unique_ptr<imatrix<char>> _asciiData;
+    float _videoRatio = 1.0;
+    int _videoHeight = 0;
+    int _videoWidth = 0;
+    int _pixelStepWidth = 1;
+    int _pixelStepHeight = 1;
+};

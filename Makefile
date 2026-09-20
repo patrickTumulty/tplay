@@ -1,7 +1,7 @@
 ARCH ?= native
 BUILD_DIR ?= $(CURDIR)/build
 INSTALL_PREFIX ?= $(CURDIR)/dist
-BUILD_TYPE = Release
+BUILD_TYPE = Debug 
 TARGET = all
 
 BUILD_FILE = $(BUILD_DIR)/build.ninja

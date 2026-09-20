@@ -1,5 +1,8 @@
 
 #include "tui_session.hpp"
+#include <algorithm>
+#include <memory>
+#include <thread>
 
 TUISession::TUISession()
 {
@@ -7,7 +10,7 @@ TUISession::TUISession()
     noecho();
     cbreak();
     keypad(stdscr, TRUE);
-    // nodelay(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
     curs_set(0);
 
     getmaxyx(stdscr, _currentTermSize.height, _currentTermSize.width);
@@ -21,6 +24,8 @@ TUISession::~TUISession()
 void TUISession::onTerminalSizeChange()
 {
     getmaxyx(stdscr, _currentTermSize.height, _currentTermSize.width);
+    for (auto listener : _listeners)
+        listener->onTerminalSizeChange(_currentTermSize);
 }
 
 void TUISession::updatePresentationWindow()
@@ -36,11 +41,24 @@ void TUISession::updatePresentationWindow()
     drawBox(offsetX, offsetY, rec.height, rec.width);
 }
 
+void TUISession::addTUISessionListener(std::shared_ptr<ITUISessionListener> listener)
+{
+    _listeners.push_back(listener);
+}
+
+void TUISession::removeTUISessionListener(std::shared_ptr<ITUISessionListener> listener)
+{
+    _listeners.erase(std::remove(_listeners.begin(), _listeners.end(), listener), _listeners.end());
+}
+
 void TUISession::run()
 {
     while (true)
     {
         clear();
+
+        for (auto listener : _listeners)
+            listener->onTerminalUpdate();
 
         updatePresentationWindow();
 
@@ -55,5 +73,7 @@ void TUISession::run()
         {
             break;
         }
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
     }
 }

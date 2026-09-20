@@ -10,7 +10,7 @@
 template <typename T> class greedy_matrix : public imatrix<T>
 {
   public:
-    greedy_matrix(int height, int width) : _height(height), _width(width), _allocHeight(0), _allocWidth(0)
+    explicit greedy_matrix(int height, int width) : _height(height), _width(width), _allocHeight(0), _allocWidth(0)
     {
     }
 
@@ -29,12 +29,12 @@ template <typename T> class greedy_matrix : public imatrix<T>
         _allocBytes = 0;
     }
 
-    int height() override
+    int height() const override
     {
         return _height;
     }
 
-    int width() override
+    int width() const override
     {
         return _width;
     }
@@ -44,7 +44,7 @@ template <typename T> class greedy_matrix : public imatrix<T>
         allocateMat(height, width);
     }
 
-    T get(int x, int y) override
+    T get(int x, int y) const override
     {
         if (!inBounds(x, y))
         {
@@ -63,7 +63,7 @@ template <typename T> class greedy_matrix : public imatrix<T>
     }
 
   private:
-    bool inBounds(int x, int y)
+    bool inBounds(int x, int y) const
     {
         return (x >= 0 && x < _width) && (y >= 0 && y < _height);
     }

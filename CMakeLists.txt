@@ -4,6 +4,7 @@ project(tplay LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(SPDLOG_COMPILE_LEVEL SPDLOG_LEVEL_DEBUG)
 
@@ -30,6 +31,9 @@ add_executable(${PROJECT_NAME}
     src/logging.cpp
     src/utils.cpp
     src/tui_session.cpp
+    src/video_pipeline.cpp
+    src/video2ascii_converter.cpp
+    src/videosrc_udp.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

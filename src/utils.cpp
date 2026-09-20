@@ -1,7 +1,8 @@
 
 #include "utils.hpp"
 #include <cmath>
-
+#include <format>
+#include <stdexcept>
 
 Rectangle fitDimensionsToRatio(const Rectangle rec, const float targetRatio)
 {
@@ -61,4 +62,12 @@ void drawBox(int x, int y, int height, int width)
     mvaddch(y, x + max_x - 1, ACS_URCORNER);             // Upper Right
     mvaddch(y + max_y - 1, x, ACS_LLCORNER);             // Lower Left
     mvaddch(y + max_y - 1, x + max_x - 1, ACS_LRCORNER); // Lower Right
+}
+
+void throwIfNull(void *ptr, const char *ptrName, std::string failMessage)
+{
+    if (ptr == nullptr)
+    {
+        throw std::runtime_error(std::format("{} : {} is null", failMessage, ptrName));
+    }
 }
