@@ -27,7 +27,7 @@ struct pixel
      */
     float luminance()
     {
-        return 0.2126f * r + 0.7152f * g + 0.0722f * b;
+        return (0.2126f * r + 0.7152f * g + 0.0722f * b) / 255.0f;
     }
 };
 
@@ -44,8 +44,8 @@ class Video2AsciiConverter : public ITUISessionListener
   private:
     float averagePixelsLuminance(int x, int y, int height, int width, const imatrix<pixel> &buffer);
 
-    Rectangle _terminalSize;
-    bool _terminalSizeChange;
+    Rectangle _terminalSize{};
+    bool _terminalSizeChange = false;
     std::unique_ptr<imatrix<char>> _asciiData;
     float _videoRatio = 1.0;
     int _videoHeight = 0;

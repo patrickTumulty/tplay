@@ -16,6 +16,7 @@ Video2AsciiConverter::Video2AsciiConverter() : _asciiData(std::make_unique<greed
 
 void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
 {
+    bool resized = false;
     if (_videoHeight != buffer.height() || _videoWidth != buffer.width())
     {
         spdlog::info("Video buffer size change: {}x{} -> {}x{}", _videoWidth, _videoHeight, buffer.width(),
@@ -27,37 +28,41 @@ void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
 
         auto rec = fitDimensionsToRatio(_terminalSize, _videoRatio * 2.0);
         int height = _asciiData->height();
-        int width = _asciiData->height();
+        int width = _asciiData->width();
         _asciiData->resize(rec.height, rec.width);
+        resized = true;
         spdlog::info("Resizing ascii buffer: video change {}x{} -> {}x{}", width, height, _asciiData->width(),
                      _asciiData->height());
-
-        _pixelStepWidth = _videoWidth / _asciiData->width();
-        _pixelStepHeight = _videoHeight / _asciiData->height();
     }
 
     if (_terminalSizeChange)
     {
         auto rec = fitDimensionsToRatio(_terminalSize, _videoRatio * 2.0);
         int height = _asciiData->height();
-        int width = _asciiData->height();
+        int width = _asciiData->width();
         _asciiData->resize(rec.height, rec.width);
         _terminalSizeChange = false;
+        resized = true;
         spdlog::info("Resizing ascii buffer: terminal change {}x{} -> {}x{}", width, height, _asciiData->width(),
                      _asciiData->height());
     }
 
-    int pixelIdxX = 0;
-    int pixelIdxY = 0;
+    if (resized && _asciiData->width() > 0 && _asciiData->height() > 0)
+    {
+        _pixelStepWidth = _videoWidth / _asciiData->width();
+        _pixelStepHeight = _videoHeight / _asciiData->height();
+    }
+
     for (int i = 0; i < _asciiData->height(); i++)
     {
+        int pixelIdxX = 0;
+        int pixelIdxY = i * _pixelStepHeight;
         for (int j = 0; j < _asciiData->width(); j++)
         {
             float luminance = averagePixelsLuminance(pixelIdxX, pixelIdxY, _pixelStepHeight, _pixelStepWidth, buffer);
-            int offset = ASCII_DENSITY_RAMP_LEN * luminance;
+            int offset = std::min(ASCII_DENSITY_RAMP_LEN - 1, static_cast<int>(ASCII_DENSITY_RAMP_LEN * luminance));
             _asciiData->set(ASCII_DENSITY_RAMP[offset], j, i);
             pixelIdxX += _pixelStepWidth;
-            pixelIdxY += _pixelStepHeight;
         }
     }
 }
@@ -81,6 +86,10 @@ void Video2AsciiConverter::onTerminalUpdate()
 float Video2AsciiConverter::averagePixelsLuminance(int x, int y, int height, int width, const imatrix<pixel> &buffer)
 {
     float total = height * width;
+    if (total <= 0.0f)
+    {
+        return 0.0f;
+    }
     float luminanceSum = 0.0f;
     for (int i = 0; i < height; i++)
     {
