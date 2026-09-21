@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "glib.h"
 #include "imatrix.hpp"
 #include <cstdint>
 #include <cstdlib>
@@ -12,6 +13,7 @@ template <typename T> class greedy_matrix : public imatrix<T>
   public:
     explicit greedy_matrix(int height, int width) : _height(height), _width(width), _allocHeight(0), _allocWidth(0)
     {
+        allocateMat(height, width);
     }
 
     ~greedy_matrix()
@@ -100,6 +102,8 @@ template <typename T> class greedy_matrix : public imatrix<T>
             _mat[i] = (T *)ptr;
             ptr += (sizeof(T) * width);
         }
+        _height = height;
+        _width = width;
         return _mat;
     }
 

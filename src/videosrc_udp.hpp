@@ -10,17 +10,23 @@ struct UdpVideoSrcContext
     GstElement *h265parse;
 };
 
-class UdpVideoSrc : public AbstractVideoSrc
+class UdpVideoSrc : public IVideoSrc
 {
   public:
-    explicit UdpVideoSrc(Ip ip, int port, GstElement *pipeline);
+    explicit UdpVideoSrc(Ip ip, int port);
 
-    GstElement *getSrcElement() override
+    GstElement *getSrcElement() const override
     {
         return _srcElement;
+    }
+
+    GstElement *getSrcBin() const override
+    {
+        return _srcBin;
     }
 
   private:
     UdpVideoSrcContext _srcContext;
     GstElement *_srcElement;
+    GstElement *_srcBin;
 };

@@ -6,16 +6,7 @@
 class IVideoSrc
 {
   public:
-    virtual GstElement *getSrcElement() = 0;
+    virtual GstElement *getSrcElement() const = 0;
+    virtual GstElement *getSrcBin() const = 0;
 };
 
-class AbstractVideoSrc : public IVideoSrc
-{
-  public:
-    explicit AbstractVideoSrc(GstElement *pipeline) : _pipeline(pipeline)
-    {
-    }
-
-  protected:
-    GstElement *_pipeline;
-};

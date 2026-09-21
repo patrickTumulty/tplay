@@ -4,7 +4,6 @@
 #include "gst/gstelement.h"
 #include "gst/gstutils.h"
 #include "spdlog/spdlog.h"
-#include "videosrc.hpp"
 #include <stdexcept>
 
 namespace
@@ -54,14 +53,12 @@ void onPadAdded(GstElement *_, GstPad *newPad, gpointer userData)
 }
 } // namespace
 
-UdpVideoSrc::UdpVideoSrc(Ip ip, int port, GstElement *pipeline) : AbstractVideoSrc(pipeline)
+UdpVideoSrc::UdpVideoSrc(Ip ip, int port)
 {
     std::string failMessage = "Unable to initialize UDP video source";
 
-    if (!pipeline)
-    {
-        throw std::runtime_error(std::format("{}: bad param pipeline is null", failMessage));
-    }
+    _srcBin = gst_bin_new("video_src_bin");
+    throwIfNull(_srcBin, STR(_srcBin), failMessage);
 
     GstElement *source = gst_element_factory_make("udpsrc", "source");
     throwIfNull(source, STR(source), failMessage);
@@ -80,6 +77,7 @@ UdpVideoSrc::UdpVideoSrc(Ip ip, int port, GstElement *pipeline) : AbstractVideoS
 
     GstElement *capsfilter = gst_element_factory_make("capsfilter", "udp-source-filter");
     throwIfNull(capsfilter, STR(capsfilter), failMessage);
+    _srcElement = capsfilter;
 
     _srcContext.h265parse = parser;
 
@@ -93,13 +91,13 @@ UdpVideoSrc::UdpVideoSrc(Ip ip, int port, GstElement *pipeline) : AbstractVideoS
     g_object_set(G_OBJECT(capsfilter), "caps", caps, NULL);
     gst_caps_unref(caps);
 
-    gst_bin_add_many(GST_BIN(pipeline), //
-                     source,            //
-                     demux,             //
-                     parser,            //
-                     decoder,           //
-                     converter,         //
-                     capsfilter,        //
+    gst_bin_add_many(GST_BIN(_srcBin), //
+                     source,           //
+                     demux,            //
+                     parser,           //
+                     decoder,          //
+                     converter,        //
+                     capsfilter,       //
                      NULL);
 
     if (!gst_element_link(source, demux))
