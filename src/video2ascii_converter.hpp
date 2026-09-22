@@ -25,7 +25,7 @@ struct pixel
      *
      * @return The calculated luminance value as a float, ranging from 0.0f (darkest) to 1.0f (brightest).
      */
-    float luminance()
+    float luminance() const
     {
         return (0.2126f * r + 0.7152f * g + 0.0722f * b) / 255.0f;
     }

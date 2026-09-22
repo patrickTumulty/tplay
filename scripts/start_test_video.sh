@@ -3,7 +3,7 @@
 set -e
 
 PORT=5000
-RESOLUTION=1080
+RESOLUTION=720
 
 usage() {
     echo "Usage: $0 [OPTIONS]"
@@ -53,6 +53,10 @@ case "$RESOLUTION" in
     720)
         WIDTH=1280
         HEIGHT=720
+        ;;
+    512)
+        WIDTH=512
+        HEIGHT=512
         ;;
     *)
         echo "Error: resolution must be 1080 or 720"

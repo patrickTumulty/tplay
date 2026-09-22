@@ -33,7 +33,7 @@ GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
 
     GstMapInfo map;
     GstBuffer *buffer = gst_sample_get_buffer(sample);
-    int stride = 0, height = 0, width = 0;
+    int height = 0, width = 0;
 
     if (!gst_buffer_map(buffer, &map, GST_MAP_READ))
     {
@@ -55,15 +55,17 @@ GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
 
         auto videoSize = context->videoSize;
 
-        context->pixelBuffer.resize(videoSize.height, videoSize.width); // TODO: Debug why this isn't getting allocated correctly
+        context->pixelBuffer.resize(videoSize.height,
+                                    videoSize.width); // TODO: Debug why this isn't getting allocated correctly
 
         GstVideoMeta *meta = gst_buffer_get_video_meta(buffer);
 
-        stride = meta ? meta->stride[0] : videoSize.width * 3;
+        context->pixelStride = meta ? meta->stride[0] : videoSize.width * 3;
 
         const gchar *format = gst_structure_get_string(s, "format");
 
-        spdlog::info("Resolution {}x{} stride {} '{}'", videoSize.width, videoSize.height, stride, format);
+        spdlog::info("Resolution {}x{} stride {} '{}'", videoSize.width, videoSize.height, context->pixelStride,
+                     format);
     }
 
     if (!context->resolutionSet)
@@ -77,7 +79,7 @@ GstFlowReturn onNewSample(GstElement *sink, gpointer userData)
 
     for (int y = 0; y < videoSize.height; y++)
     {
-        const uint8_t *line = map.data + y * stride;
+        const uint8_t *line = map.data + y * context->pixelStride;
         for (int x = 0; x < videoSize.width; x++)
         {
             const uint8_t *p = line + x * 3;

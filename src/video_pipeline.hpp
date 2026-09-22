@@ -11,6 +11,7 @@ struct PipelineContext
 {
     bool resolutionSet = false;
     Rectangle videoSize{0, 0};
+    int pixelStride = 3;
     VideoSourceType videoSource = NONE;
     greedy_matrix<pixel> pixelBuffer = greedy_matrix<pixel>(512, 512);
     union {
