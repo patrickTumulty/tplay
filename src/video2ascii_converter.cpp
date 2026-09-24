@@ -7,12 +7,44 @@
 #include <cmath>
 #include <ncurses.h>
 
-const char *ASCII_DENSITY_RAMP = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
-const int ASCII_DENSITY_RAMP_LEN = strlen(ASCII_DENSITY_RAMP);
+class AsciiGradient
+{
+  public:
+    AsciiGradient(const char *gradient) : _gradient(gradient), _gradientLen(strlen(_gradient))
+    {
+    }
+
+    char get(float value) const
+    {
+        if (_inverted)
+        {
+            value = 1 - value;
+        }
+        int offset = std::min(_gradientLen - 1, static_cast<int>(_gradientLen * value));
+        return _gradient[offset];
+    }
+
+    void invert()
+    {
+        _inverted = !_inverted;
+    }
+
+  private:
+    const char *_gradient;
+    int _gradientLen;
+    bool _inverted = false;
+};
+
+const char *GRADIENT1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
+const char *GRADIENT2 = "@#*+=- ";
+
+AsciiGradient gradient(GRADIENT2);
+
 const float LUMINANCE_GAMMA = 2.2f;
 
 Video2AsciiConverter::Video2AsciiConverter() : _asciiData(std::make_unique<greedy_matrix<char>>(1, 1))
 {
+    gradient.invert();
 }
 
 void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
@@ -62,8 +94,7 @@ void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
         {
             float luminance = averagePixelsLuminance(pixelIdxX, pixelIdxY, _pixelStepHeight, _pixelStepWidth, buffer);
             luminance = std::pow(luminance, 1.0f / LUMINANCE_GAMMA); // gamma: spread mid-tones across ramp
-            int offset = std::min(ASCII_DENSITY_RAMP_LEN - 1, static_cast<int>(ASCII_DENSITY_RAMP_LEN * luminance));
-            _asciiData->set(ASCII_DENSITY_RAMP[offset], j, i);
+            _asciiData->set(gradient.get(luminance), j, i);
             pixelIdxX += _pixelStepWidth;
         }
     }

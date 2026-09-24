@@ -1,7 +1,6 @@
 
 #include "video_pipeline.hpp"
 #include "gst/app/gstappsink.h"
-#include "gst/gstmacros.h"
 #include "gst/gstpad.h"
 #include "gst/gstutils.h"
 #include "gst/video/gstvideometa.h"

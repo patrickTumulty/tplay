@@ -7,7 +7,7 @@
 #   <prefix>/bin/tplay
 #   <prefix>/lib/*.so*                    dependencies (NEEDED closure)
 #   <prefix>/lib/gstreamer-1.0/*.so       plugins used by tplay's pipeline
-#   <prefix>/run.sh                       launcher setting LD_LIBRARY_PATH etc.
+#   <prefix>/tplay                        launcher setting LD_LIBRARY_PATH etc.
 #
 # Base system libraries (the dynamic loader, libc, libm, libstdc++, libgcc)
 # are intentionally left to the target OS.
@@ -142,15 +142,8 @@ for plugin in "${CURATED[@]}"; do
     copy_deps "${LIBDIR}/gstreamer-1.0/libgst${plugin}.so"
 done
 
-cat > "${PREFIX}/run.sh" <<'EOF'
-#!/usr/bin/env bash
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export LD_LIBRARY_PATH="$DIR/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
-export GST_PLUGIN_PATH="$DIR/lib/gstreamer-1.0"
-export GST_PLUGIN_SYSTEM_PATH=
-exec "$DIR/bin/tplay" "$@"
-EOF
-chmod +x "${PREFIX}/run.sh"
+cp "${ROOT}/scripts/run.sh" "${PREFIX}/tplay"
+chmod +x "${PREFIX}/tplay"
 
 echo "bundle: ${PREFIX}"
 echo "  binary:     $(file -b "${PREFIX}/bin/tplay" | cut -d, -f1-2)"

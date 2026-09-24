@@ -7,7 +7,12 @@
 
 struct UdpVideoSrcContext
 {
-    GstElement *h265parse;
+    bool linked = false;
+    GstElement *h265sink;
+    GstElement *h265src;
+    GstElement *h264sink;
+    GstElement *h264src;
+    GstElement *h26xsink;
 };
 
 class UdpVideoSrc : public IVideoSrc
