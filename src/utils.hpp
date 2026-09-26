@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "gst/gstelement.h"
 #include <cmath>
 #include <ncurses.h>
 #include <string>
@@ -55,4 +56,4 @@ struct Rectangle
 
 void drawBox(int x, int y, int height, int width);
 Rectangle fitDimensionsToRatio(const Rectangle rec, const float targetRatio);
-void throwIfNull(void *ptr, const char *ptrName, std::string failMessage);
+void verifyElement(GstElement *element, const char *elementName, std::string failMessage);

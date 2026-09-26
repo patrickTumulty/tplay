@@ -1,5 +1,6 @@
 
 #include "utils.hpp"
+#include "gst/gstelement.h"
 #include <cmath>
 #include <format>
 #include <stdexcept>
@@ -64,10 +65,10 @@ void drawBox(int x, int y, int height, int width)
     mvaddch(y + max_y - 1, x + max_x - 1, ACS_LRCORNER); // Lower Right
 }
 
-void throwIfNull(void *ptr, const char *ptrName, std::string failMessage)
+void verifyElement(GstElement *element, const char *elementName, std::string failMessage)
 {
-    if (ptr == nullptr)
+    if (element == nullptr)
     {
-        throw std::runtime_error(std::format("{} : {} is null", failMessage, ptrName));
+        throw std::runtime_error(std::format("{} : unable to create '{}'", failMessage, elementName));
     }
 }

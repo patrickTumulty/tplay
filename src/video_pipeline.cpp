@@ -104,10 +104,10 @@ VideoPipeline::VideoPipeline(std::shared_ptr<IVideoSrc> videoSrc, std::shared_pt
 
     _context.pipeline = gst_pipeline_new("tplay-pipeline");
 
-    throwIfNull(_context.pipeline, STR(_context.pipeline), failMessage);
+    verifyElement(_context.pipeline, STR(_context.pipeline), failMessage);
 
     _context.appsink = gst_element_factory_make("appsink", "appsink");
-    throwIfNull(_context.appsink, STR(_context.appsink), failMessage);
+    verifyElement(_context.appsink, STR(_context.appsink), failMessage);
 
     g_object_set(_context.appsink,     //
                  "emit-signals", TRUE, //
