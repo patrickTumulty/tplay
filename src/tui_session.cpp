@@ -2,9 +2,12 @@
 #include "tui_session.hpp"
 #include <algorithm>
 #include <memory>
+#include <ncurses.h>
 #include <thread>
 
-TUISession::TUISession()
+constexpr float TUI_REFRESH_RATE_HZ = 60.0f;
+
+TUISession::TUISession() : _updateDeltaMillis(1 / TUI_REFRESH_RATE_HZ)
 {
     initscr();
     noecho();
@@ -44,12 +47,13 @@ void TUISession::run()
 
     while (true)
     {
-        clear();
+        werase(stdscr);
 
         for (auto listener : _listeners)
             listener->onTerminalUpdate();
 
-        refresh();
+        wnoutrefresh(stdscr);
+        doupdate();
 
         int ch = getch();
         if (ch == KEY_RESIZE)
@@ -61,6 +65,6 @@ void TUISession::run()
             break;
         }
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+        std::this_thread::sleep_for(std::chrono::milliseconds(_updateDeltaMillis));
     }
 }

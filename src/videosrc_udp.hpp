@@ -12,7 +12,6 @@ struct UdpVideoSrcContext
     GstElement *decoder;
     GstElement *h264parse;
     GstElement *h264src;
-    GstElement *videoconvert;
 };
 
 class UdpVideoSrc : public IVideoSrc

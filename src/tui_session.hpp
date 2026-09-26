@@ -28,5 +28,6 @@ class TUISession
     void updatePresentationWindow();
 
     Rectangle _currentTermSize;
+    int _updateDeltaMillis = 0;
     std::vector<std::shared_ptr<ITUISessionListener>> _listeners;
 };

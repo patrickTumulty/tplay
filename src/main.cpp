@@ -2,6 +2,7 @@
 #include "video_pipeline.hpp"
 #include "videosrc_udp.hpp"
 #include <cstdio>
+#include <exception>
 #include <gst/app/gstappsink.h>
 #include <gst/gst.h>
 #include <gst/gstbuffer.h>
@@ -106,29 +107,36 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    initGStreamer();
-
-    std::shared_ptr<IVideoSrc> videoSource;
-
-    switch (videoSourceType)
+    try
     {
-    case UDP_MPEGTS:
-        videoSource = std::make_shared<UdpVideoSrc>(ip, port);
-        spdlog::info("udp://{}.{}.{}.{}:{}", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
-        break;
-    case NONE:
-    default:
+        initGStreamer();
 
-        return 0;
+        std::shared_ptr<IVideoSrc> videoSource;
+
+        switch (videoSourceType)
+        {
+        case UDP_MPEGTS:
+            videoSource = std::make_shared<UdpVideoSrc>(ip, port);
+            spdlog::info("udp://{}.{}.{}.{}:{}", ip.octet3, ip.octet2, ip.octet1, ip.octet0, port);
+            break;
+        case NONE:
+        default:
+
+            return 0;
+        }
+
+        auto videoConverter = std::make_shared<Video2AsciiConverter>();
+        auto videoPipeline = VideoPipeline(videoSource, videoConverter);
+        auto tuiSession = TUISession();
+        tuiSession.addTUISessionListener(videoConverter);
+
+        videoPipeline.start();
+        tuiSession.run();
     }
-
-    auto videoConverter = std::make_shared<Video2AsciiConverter>();
-    auto videoPipeline = VideoPipeline(videoSource, videoConverter);
-    auto tuiSession = TUISession();
-    tuiSession.addTUISessionListener(videoConverter);
-
-    videoPipeline.start();
-    tuiSession.run();
+    catch (const std::exception &ex)
+    {
+        spdlog::error("Something went wrong! {}", ex.what());
+    }
 
     spdlog::info("**** tplay: EXITING");
 
