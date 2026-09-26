@@ -5,6 +5,7 @@
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
 #include <cmath>
+#include <mutex>
 #include <ncurses.h>
 
 class AsciiGradient
@@ -38,11 +39,11 @@ class AsciiGradient
 const char *GRADIENT1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. ";
 const char *GRADIENT2 = "@#*+=- ";
 
-AsciiGradient gradient(GRADIENT2);
+AsciiGradient gradient(GRADIENT1);
 
 const float LUMINANCE_GAMMA = 2.2f;
 
-Video2AsciiConverter::Video2AsciiConverter() : _asciiData(std::make_unique<greedy_matrix<char>>(1, 1))
+Video2AsciiConverter::Video2AsciiConverter() : _asciiData(std::make_unique<greedy_matrix<char>>(30, 50)), _asciiDataLock{}
 {
     gradient.invert();
 }
@@ -62,8 +63,11 @@ void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
         auto rec = fitDimensionsToRatio(_terminalSize, _videoRatio * 2.0);
         int height = _asciiData->height();
         int width = _asciiData->width();
-        _asciiData->resize(rec.height, rec.width);
-        resized = true;
+        {
+            std::scoped_lock lock(_asciiDataLock);
+            _asciiData->resize(rec.height, rec.width);
+            resized = true;
+        }
         spdlog::info("Resizing ascii buffer: video change {}x{} -> {}x{}", width, height, _asciiData->width(),
                      _asciiData->height());
     }
@@ -73,9 +77,12 @@ void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
         auto rec = fitDimensionsToRatio(_terminalSize, _videoRatio * 2.0);
         int height = _asciiData->height();
         int width = _asciiData->width();
-        _asciiData->resize(rec.height, rec.width);
-        _terminalSizeChange = false;
-        resized = true;
+        {
+            std::scoped_lock lock(_asciiDataLock);
+            _asciiData->resize(rec.height, rec.width);
+            _terminalSizeChange = false;
+            resized = true;
+        }
         spdlog::info("Resizing ascii buffer: terminal change {}x{} -> {}x{}", width, height, _asciiData->width(),
                      _asciiData->height());
     }
@@ -102,6 +109,8 @@ void Video2AsciiConverter::processPixelBuffer(const imatrix<pixel> &buffer)
 
 void Video2AsciiConverter::onTerminalUpdate()
 {
+    std::scoped_lock lock(_asciiDataLock);
+
     int offsetX = std::max(1, (_terminalSize.width - _asciiData->width()) / 2);
     int offsetY = std::max(0, (_terminalSize.height - _asciiData->height()) / 2);
 
@@ -109,11 +118,11 @@ void Video2AsciiConverter::onTerminalUpdate()
     {
         for (int j = 0; j < _asciiData->width(); j++)
         {
-            mvaddch(i + offsetY, j + offsetX, _asciiData->get(j, i));
+            mvaddch(i + offsetY + 1, j + offsetX + 1, _asciiData->get(j, i));
         }
     }
 
-    // drawBox(offsetX, offsetY, _asciiData->height(), _asciiData->width());
+    drawBox(offsetX, offsetY, _asciiData->height() + 1, _asciiData->width() + 1);
 }
 
 float Video2AsciiConverter::averagePixelsLuminance(int x, int y, int height, int width, const imatrix<pixel> &buffer)
@@ -137,8 +146,8 @@ float Video2AsciiConverter::averagePixelsLuminance(int x, int y, int height, int
 void Video2AsciiConverter::onTerminalSizeChange(Rectangle newSize)
 {
     _terminalSize = newSize;
-    _terminalSize.height--;
-    _terminalSize.width--;
+    _terminalSize.height -= 2;
+    _terminalSize.width -= 2;
     spdlog::info("Terminal size change h={} w={}", newSize.height, newSize.width);
     _terminalSizeChange = true;
 }

@@ -14,6 +14,7 @@ template <typename T> class greedy_matrix : public imatrix<T>
     explicit greedy_matrix(int height, int width) : _height(height), _width(width), _allocHeight(0), _allocWidth(0)
     {
         allocateMat(height, width);
+        clear();
     }
 
     ~greedy_matrix()
@@ -68,6 +69,14 @@ template <typename T> class greedy_matrix : public imatrix<T>
     bool inBounds(int x, int y) const
     {
         return (x >= 0 && x < _width) && (y >= 0 && y < _height);
+    }
+
+    void clear()
+    {
+        for (int i = 0; i < _height; i++)
+        {
+            memset(_mat[i], ' ', sizeof(T) * _width);
+        }
     }
 
     T **allocateMat(int height, int width)

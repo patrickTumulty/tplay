@@ -5,6 +5,7 @@
 #include "tui_session.hpp"
 #include "utils.hpp"
 #include <cstdint>
+#include <mutex>
 
 struct pixel
 {
@@ -47,6 +48,7 @@ class Video2AsciiConverter : public ITUISessionListener
     Rectangle _terminalSize{};
     bool _terminalSizeChange = false;
     std::unique_ptr<imatrix<char>> _asciiData;
+    std::mutex _asciiDataLock;
     float _videoRatio = 1.0;
     int _videoHeight = 0;
     int _videoWidth = 0;
